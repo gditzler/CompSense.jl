@@ -23,7 +23,7 @@ using LinearAlgebra;
 function SL0(A::Matrix{Float64}, 
              b::Vector{Float64};
              signma_min=.0001, 
-             sigma_decrease_factor=.5, 
+             sigma_decrease_factor=.85, 
              maxiter=150, 
              epsilon=.001)
     

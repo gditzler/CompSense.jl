@@ -18,21 +18,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-module CompSense
+using LinearAlgebra, Random; 
 
-using LinearAlgebra; 
-using Convex; 
-using SCS;
-using Random; 
+function cs_model(n::Int64, p::Int64, k::Int64; type="Gaussian")
+    local A, x; 
+    if type == "Gaussian"
+        A = randn(n, p);   
+        while rank(A) != n
+            A = randn(n, p);
+        end 
+        x = zeros(p);
+        pp = sign.(randn(k)).*(ones(k)+abs.(randn(k)));
+        rp = randperm(n);
+        x[rp[1:k]] = pp;
+        b = A*x;
+    else
+        error("Uknown type in cs_model(n,m,type).")
+    end
 
-export IRWLS;
-export L0EM; 
-export SL0; 
-export cs_model; 
+    return A, x, b;
 
-include("IRWLS.jl");
-include("L0EM.jl");
-include("SL0.jl");
-include("utils.jl");
-
-end 
+end
