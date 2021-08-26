@@ -18,18 +18,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-module CompSense
-
 using LinearAlgebra; 
-using Convex; 
-using SCS;
 
-export IRWLS;
-export L0EM; 
-export SL0; 
+function SL0(A::Matrix{Float64}, 
+             b::Vector{Float64};
+             signma_min=.0001, 
+             sigma_decrease_factor=.5, 
+             maxiter=150, 
+             epsilon=.001)
+    
+    # set up the locals 
+    local mu_0, L, A_pinv, s, x; 
 
-include("IRWLS.jl");
-include("L0EM.jl");
-include("SL0.jl");
+    # assign constants 
+    mu_0 = 2;          # The  value  of  mu_0  scales  the sequence of mu
+    L = 3;             # number  of  iterations of the internal (steepest ascent) loop
+    A_pinv = pinv(A);  # pseudo-inverse of matrix A defined by A_pinv=A'*inv(A*A')
 
-end 
+    # initialize the solution 
+    s = A_pinv*b;
+    sigma = 2*maximum(abs.(s));
+
+    for j = 1:maxiter
+
+        for i = 1:L
+            delta = s.*exp.(-abs.(s).^2/sigma^2);
+            s -= mu_0*delta; 
+            s -= A_pinv*(A*s - b);
+        end
+        sigma *= sigma_decrease_factor;
+    end
+    x = s;
+    i = abs.(x) .< epsilon;
+    x[i] = zeros(sum(i));
+    return x
+end
+
+# A = randn(10, 50); b = randn(10);
+# x = SL0(A, b);
+# println(x)

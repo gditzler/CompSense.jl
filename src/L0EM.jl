@@ -56,8 +56,7 @@ function L0EM(A::Matrix{Float64},
               lambda=.001, 
               epsilon=.001, 
               maxiter=50)
-    global n, p, theta;
-    global A_eta, eta; 
+    local n, p, theta, A_eta, eta;
     eps_stop = .01; 
     eps_zero = .01; 
     n, p = size(A);
@@ -70,10 +69,14 @@ function L0EM(A::Matrix{Float64},
     for i = 1:maxiter 
         eta = theta;
 
+        # copy the squared eta terms into a matrix so we can use the hammard product. 
         A_eta = repeat(eta.^2, 1, n)';
         A_eta = A_eta.*A;
+        
+        # update theta 
         theta = inv(A_eta'*A + lambda*eye)*A_eta'*b;
 
+        # check to break the loop due to a small difference in norm 
         if norm(theta-eta, 2) <= epsilon
             break; 
         end
@@ -85,3 +88,6 @@ function L0EM(A::Matrix{Float64},
 end
 
 
+# A = randn(10, 50); b = randn(10);
+# x = L0EM(A, b);
+# println(x)

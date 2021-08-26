@@ -58,13 +58,12 @@ function IRWLS(A::Matrix{Float64},
                maxiter=100, 
                epsilon=0.01)
     # get the second column dim of A 
-    global p
+    local p, x, xhat, w; 
     _, p = size(A); 
-    global w = ones(p);
-    global w_old = w; 
-    global o = ones(p);
-    global x = zeros(p); 
-    global xhat;
+    w = ones(p);
+    w_old = w; 
+    o = ones(p);
+    x = zeros(p); 
 
     solver = () -> SCS.Optimizer(verbose=0)
 
@@ -91,3 +90,6 @@ function IRWLS(A::Matrix{Float64},
     return x; 
 end 
 
+# A = randn(10, 50); b = randn(10);
+# x = IRWLS(A, b);
+# println(x)
