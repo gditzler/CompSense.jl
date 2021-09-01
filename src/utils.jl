@@ -20,7 +20,24 @@
 
 using LinearAlgebra, Random; 
 
-function cs_model(n::Int64, p::Int64, k::Int64; type="Gaussian")
+
+"""
+    SL0(n::Int64, p::Int64, k::Int64, type::String="Gaussian")
+
+Generate a dataset for compressed sensing. 
+
+### Input
+
+- `n       -- Int64: number of rows 
+- `p`      -- Int64: number of columns
+- `k`      -- Int64: number true non-zeros
+- `type`   -- String: type to generate ["Gaussian"]
+
+### Output
+
+(A, x, y) for Ax=y
+"""
+function cs_model(n::Int64, p::Int64, k::Int64, type::String="Gaussian")
     local A, x; 
     if type == "Gaussian"
         A = randn(n, p);   

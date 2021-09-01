@@ -20,9 +20,30 @@
 
 using LinearAlgebra; 
 
+"""
+    SL0(A::Matrix{Float64}, b::Vector{Float64}; maxiter=100, epsilon=0.01, sigma_decrease_factor=0.85)
+
+Find the solution to Ax=b using Iterative Recursive Least Squares.
+
+### Input
+
+- `A`       -- Matrix: Ax=b 
+- `b`       -- Vector: Ax=b
+- `sigma_decrease_factor` -- (optional) number of optmization iterations 
+- `epsilon` -- (optional) threshold to stop optimizing
+- `maxiter` -- (optional) max number of iterations 
+
+### Output
+
+Solution to Ax=b (Vector{Float64})
+
+### Algorithm
+
+Smoothed L0 (http://ee.sharif.edu/~SLzero/)
+
+"""
 function SL0(A::Matrix{Float64}, 
              b::Vector{Float64};
-             signma_min=.0001, 
              sigma_decrease_factor=.85, 
              maxiter=150, 
              epsilon=.001)
