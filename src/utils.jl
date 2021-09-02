@@ -46,7 +46,7 @@ function cs_model(n::Int64, p::Int64, k::Int64, type::String="Gaussian")
         end 
         x = zeros(p);
         pp = sign.(randn(k)).*(ones(k)+abs.(randn(k)));
-        rp = randperm(n);
+        rp = randperm(p);
         x[rp[1:k]] = pp;
         b = A*x;
     else
