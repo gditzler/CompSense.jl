@@ -54,5 +54,4 @@ function cs_model(n::Int64, p::Int64, k::Int64, type::String="Gaussian")
     end
 
     return A, x, b;
-
 end
