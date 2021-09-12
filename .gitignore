@@ -1,0 +1,11 @@
+# files 
+*.pyc 
+data/binary/*.npz
+data/multiclass/*.npz
+data/notest/*.npz
+data/notest/binary/*.npz
+data/notest/multiclass/*.npz
+
+# folders
+*.vscode/
+*.ipynb_checkpoints/
