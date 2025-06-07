@@ -30,9 +30,9 @@ export L0EM
 export SL0
 export cs_model
 
-include("IRWLS.jl");
-include("L0EM.jl");
-include("SL0.jl");
-include("utils.jl");
+include("IRWLS.jl")
+include("L0EM.jl")
+include("SL0.jl")
+include("utils.jl")
 
 end

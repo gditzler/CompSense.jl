@@ -58,34 +58,34 @@ function IRWLS(A::Matrix{Float64},
                maxiter=100,
                epsilon=0.01)
     # get the second column dim of A
-    local p, x, xhat, w;
-    _, p = size(A);
-    w = ones(p);
-    w_old = w;
-    o = ones(p);
-    x = zeros(p);
+    local p, x, xhat, w
+    _, p = size(A)
+    w = ones(p)
+    w_old = w
+    o = ones(p)
+    x = zeros(p)
 
     solver = () -> SCS.Optimizer(verbose=0)
 
     for i = 1:maxiter
         # create a diagonal matrix from the vector w
-        W = diagm(w);
+        W = diagm(w)
 
         # solve the convex optimization task
-        xhat = Variable(p);
+        xhat = Variable(p)
         prob = minimize(norm(W*xhat, 1), A*xhat==b)
         solve!(prob, solver)
-        xhat = evaluate(xhat);
+        xhat = evaluate(xha)
 
         # check the stop condition then move on
         w = 1.0./(epsilon*o + abs.(xhat))
         if norm(w - w_old, 2) <= 1e-6
-            break;
+            break
         end
-        w = w_old;
+        w = w_old
     end
     x = xhat;
-    i = abs.(x) .< epsilon;
-    x[i] = zeros(sum(i));
-    return x;
+    i = abs.(x) .< epsilon
+    x[i] = zeros(sum(i))
+    return x
 end
