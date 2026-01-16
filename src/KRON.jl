@@ -18,6 +18,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-function KRON(A::Matrix{Float64}, b::Vector{Float64})
+# Note: LinearAlgebra is imported by the parent module
+# TODO: This algorithm is work in progress and not yet exported
 
+"""
+    KRON(A, b)
+
+Find the solution to Ax=b using the KRON algorithm.
+
+# Arguments
+- `A::AbstractMatrix`: Sensing matrix in Ax=b
+- `b::AbstractVector`: Measurement vector in Ax=b
+
+# Returns
+- `Vector`: Sparse solution x to Ax=b
+
+# Status
+⚠️ This function is currently under development and not yet exported.
+"""
+function KRON(A::AbstractMatrix{T}, b::AbstractVector{T}) where {T<:Real}
+    # TODO: Implement the KRON algorithm
+    error("KRON is not yet implemented")
 end

@@ -18,59 +18,89 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-using LinearAlgebra
+# Note: LinearAlgebra is imported by the parent module
 
 """
-    SL0(A::Matrix{Float64}, b::Vector{Float64}; maxiter=100, epsilon=0.01, sigma_decrease_factor=0.85)
+    SL0(A, b; sigma_decrease_factor=0.85, maxiter=150, epsilon=0.001)
 
-Find the solution to Ax=b using Iterative Recursive Least Squares.
+Find the solution to Ax=b using the Smoothed L0 (SL0) algorithm.
 
-### Input
+# Arguments
+- `A::AbstractMatrix`: Sensing matrix in Ax=b
+- `b::AbstractVector`: Measurement vector in Ax=b
+- `sigma_decrease_factor::Real`: Factor by which sigma decreases each iteration (default: 0.85)
+- `maxiter::Int`: Maximum number of outer iterations (default: 150)
+- `epsilon::Real`: Threshold for zeroing small coefficients (default: 0.001)
 
-- `A`       -- Matrix: Ax=b
-- `b`       -- Vector: Ax=b
-- `sigma_decrease_factor` -- (optional) number of optmization iterations
-- `epsilon` -- (optional) threshold to stop optimizing
-- `maxiter` -- (optional) max number of iterations
+# Returns
+- `Vector`: Sparse solution x to Ax=b
 
-### Output
+# Example
+```julia
+A = randn(10, 100)
+b = randn(10)
+x = SL0(A, b; sigma_decrease_factor=0.85, maxiter=150)
+```
 
-Solution to Ax=b (Vector{Float64})
+# Algorithm
+Implements the Smoothed L0 algorithm from:
+> http://ee.sharif.edu/~SLzero/
 
-### Algorithm
-
-Smoothed L0 (http://ee.sharif.edu/~SLzero/)
-
+The algorithm approximates the L0 norm with a smooth Gaussian function
+and uses gradient ascent to maximize sparsity while maintaining feasibility.
 """
-function SL0(A::Matrix{Float64},
-             b::Vector{Float64};
-             sigma_decrease_factor=.85,
-             maxiter=150,
-             epsilon=.001)
+function SL0(A::AbstractMatrix{T},
+             b::AbstractVector{T};
+             sigma_decrease_factor::Real=0.85,
+             maxiter::Int=150,
+             epsilon::Real=0.001) where {T<:Real}
 
-    # set up the locals
-    local mu_0, L, A_pinv, s, x;
+    # Algorithm constants
+    mu_0 = T(2)  # Scales the gradient step in steepest ascent
+    L = 3        # Number of internal steepest ascent iterations
 
-    # assign constants
-    mu_0 = 2          # The  value  of  mu_0  scales  the sequence of mu
-    L = 3             # number  of  iterations of the internal (steepest ascent) loop
-    A_pinv = pinv(A)  # pseudo-inverse of matrix A defined by A_pinv=A'*inv(A*A')
+    # Compute pseudo-inverse once (expensive but needed for projection)
+    A_pinv = pinv(A)
 
-    # initialize the solution
-    s = A_pinv*b
-    sigma = 2*maximum(abs.(s))
+    # Initialize with minimum norm solution
+    s = A_pinv * b
+    sigma = 2 * maximum(abs, s)
 
-    for j = 1:maxiter
+    # Pre-allocate working arrays for in-place operations
+    delta = similar(s)
+    residual = similar(b)
 
-        for i = 1:L
-            delta = s.*exp.(-abs.(s).^2/sigma^2)
-            s -= mu_0*delta
-            s -= A_pinv*(A*s - b)
+    sigma_sq = sigma^2
+
+    for _ in 1:maxiter
+        for _ in 1:L
+            # Compute gradient of smoothed L0 approximation
+            # δ = s * exp(-|s|²/σ²)
+            @. delta = s * exp(-abs(s)^2 / sigma_sq)
+
+            # Steepest ascent step
+            @. s -= mu_0 * delta
+
+            # Project back to feasible set: s = s - A⁺(As - b)
+            mul!(residual, A, s)
+            residual .-= b
+            s .-= A_pinv * residual
         end
+
+        # Decrease sigma (annealing schedule)
         sigma *= sigma_decrease_factor
+        sigma_sq = sigma^2
     end
-    x = s
-    i = abs.(x) .< epsilon
-    x[i] = zeros(sum(i))
+
+    # Threshold small values to zero
+    x = copy(s)
+    x[abs.(x) .< epsilon] .= zero(T)
+
     return x
+end
+
+# Convenience method for mixed numeric types
+function SL0(A::AbstractMatrix, b::AbstractVector; kwargs...)
+    T = promote_type(eltype(A), eltype(b))
+    return SL0(convert(Matrix{T}, A), convert(Vector{T}, b); kwargs...)
 end

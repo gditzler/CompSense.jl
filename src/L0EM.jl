@@ -18,76 +18,89 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-using LinearAlgebra;
+# Note: LinearAlgebra is imported by the parent module
 
 """
-    L0EM(A::Matrix{Float64}, b::Vector{Float64}; maxiter=100, epsilon=0.01)
+    L0EM(A, b; lambda=0.001, epsilon=0.001, maxiter=50)
 
-Find the solution to Ax=b using an efficient EM algoritm that directly solves
-the L0 optimization problem.
+Find the solution to Ax=b using an efficient EM algorithm that directly
+solves the L0 optimization problem.
 
+# Arguments
+- `A::AbstractMatrix`: Sensing matrix in Ax=b
+- `b::AbstractVector`: Measurement vector in Ax=b
+- `lambda::Real`: Regularization parameter (default: 0.001)
+- `epsilon::Real`: Convergence threshold (default: 0.001)
+- `maxiter::Int`: Maximum number of iterations (default: 50)
 
-### Input
+# Returns
+- `Vector`: Sparse solution x to Ax=b
 
-- `A`       -- Matrix: Ax=b
-- `b`       -- Vector: Ax=b
-- `maxiter` -- (optional) number of optmization iterations
-- `epsilon` -- (optional) threshold to stop optimizing
-- `lambda`  -- (optional) regularization
+# Example
+```julia
+A = randn(10, 100)
+b = randn(10)
+x = L0EM(A, b; maxiter=50, epsilon=0.001)
+```
 
-### Output
+# Algorithm
+Implements Liu and Li's L0-EM algorithm from:
+> "L0-EM Algorithm for Sparse Recovery" (https://arxiv.org/pdf/1407.7508v1.pdf)
 
-Solution to Ax=b (Vector{Float64})
-
-### Example
-
-julia> A = randn(10, 100);
-julia> b = randn(10);
-julia> x = L0EM(A, b, maxiter=5, epsilon=.01);
-julia> println(x)
-
-### Algorithm
-
-This function implements Liu and Li's L0EM algorithms in https://arxiv.org/pdf/1407.7508v1.pdf.
-
+The algorithm uses an EM framework to iteratively reweight the problem,
+effectively solving the L0-regularized least squares problem.
 """
-function L0EM(A::Matrix{Float64},
-              b::Vector{Float64};
-              lambda=.001,
-              epsilon=.001,
-              maxiter=50)
-    local n, p, theta, A_eta, eta
-    eps_stop = .01
-    eps_zero = .01
+function L0EM(A::AbstractMatrix{T},
+              b::AbstractVector{T};
+              lambda::Real=0.001,
+              epsilon::Real=0.001,
+              maxiter::Int=50) where {T<:Real}
     n, p = size(A)
-    eye = Matrix{Float64}(I, p, p)
 
-    # get the initial solution
-    theta = inv(A'*A + lambda*eye)*A'*b
+    # Precompute A'*A and A'*b for efficiency
+    AtA = A' * A
+    Atb = A' * b
 
-    # continue to optimize theta
-    for i = 1:maxiter
-        eta = theta
+    # Get initial solution using regularized least squares
+    # Use \ operator instead of inv() for numerical stability and performance
+    theta = (AtA + lambda * I) \ Atb
 
-        # copy the squared eta terms into a matrix so we can use the hammard product.
-        A_eta = repeat(eta.^2, 1, n)'
-        A_eta = A_eta.*A
+    # Pre-allocate working arrays
+    eta = similar(theta)
+    eta_sq = similar(theta)
+    A_weighted = similar(A)
 
-        # update theta
-        theta = inv(A_eta'*A + lambda*eye)*A_eta'*b
+    for _ in 1:maxiter
+        copyto!(eta, theta)
 
-        # check to break the loop due to a small difference in norm
-        if norm(theta-eta, 2) <= epsilon
+        # Compute eta squared element-wise
+        eta_sq .= eta .^ 2
+
+        # Weight each column of A by the corresponding eta^2 value
+        # This is more efficient than repeat() + Hadamard product
+        @inbounds for j in 1:p
+            @views A_weighted[:, j] .= A[:, j] .* eta_sq[j]
+        end
+
+        # Update theta using backslash (numerically stable)
+        # Solves: (A_weighted' * A + λI) * theta = A_weighted' * b
+        theta = (A_weighted' * A + lambda * I) \ (A_weighted' * b)
+
+        # Check convergence
+        if norm(theta - eta, 2) <= epsilon
             break
         end
     end
-    x = theta
-    i = abs.(x) .< epsilon
-    x[i] = zeros(sum(i))
+
+    # Threshold small values to zero
+    x = copy(theta)
+    x[abs.(x) .< epsilon] .= zero(T)
+
     return x
 end
 
-
-# A = randn(10, 50); b = randn(10);
-# x = L0EM(A, b);
-# println(x)
+# Convenience method for mixed numeric types
+function L0EM(A::AbstractMatrix, b::AbstractVector; kwargs...)
+    T = promote_type(eltype(A), eltype(b))
+    return L0EM(convert(Matrix{T}, A), convert(Vector{T}, b); kwargs...)
+end

@@ -18,74 +18,82 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-using LinearAlgebra, Convex, SCS;
+# Note: LinearAlgebra, Convex, SCS are imported by the parent module
 
 """
-    IRLS(A::Matrix{Float64}, b::Vector{Float64}; maxiter=100, epsilon=0.01)
+    IRWLS(A, b; maxiter=100, epsilon=0.01)
 
-Find the solution to Ax=b using Iterative Recursive Least Squares.
+Find the solution to Ax=b using Iteratively Reweighted Least Squares (IRWLS).
 
-### Input
+# Arguments
+- `A::AbstractMatrix`: Sensing matrix in Ax=b
+- `b::AbstractVector`: Measurement vector in Ax=b
+- `maxiter::Int`: Maximum number of optimization iterations (default: 100)
+- `epsilon::Real`: Convergence threshold and small value regularization (default: 0.01)
 
-- `A`       -- Matrix: Ax=b
-- `b`       -- Vector: Ax=b
-- `maxiter` -- (optional) number of optmization iterations
-- `epsilon` -- (optional) threshold to stop optimizing
+# Returns
+- `Vector{Float64}`: Sparse solution x to Ax=b
 
-### Output
+# Example
+```julia
+A = randn(10, 100)
+b = randn(10)
+x = IRWLS(A, b; maxiter=5, epsilon=0.01)
+```
 
-Solution to Ax=b (Vector{Float64})
+# Algorithm
+Implements the reweighted L1 minimization algorithm from:
 
-### Example
+> Emmanuel J. Candès, Michael B. Wakin, and Stephen P. Boyd, "Enhancing
+> Sparsity by Reweighted L1 Minimization," J Fourier Anal Appl (2008)
+> 14: 877–905.
 
-julia> A = randn(10, 100);
-julia> b = randn(10);
-julia> x = IRLS(A, b, maxiter=5, epsilon=.01);
-julia> println(x)
-
-### Algorithm
-
-This function implements Andrew's monotone chain convex hull algorithm to
-Enhancing Sparsity by Reweighted L1 Minimization
-
-    Emmanuel J. Candes, Michael B. Wakin, and Stephen P. Boyd, "Enhancing
-        Sparsity by Reweighted L1 Minimization," J Fourier Anal Appl (2008)
-        14: 877–905.
-
+The algorithm iteratively solves weighted L1 minimization problems,
+updating weights based on the current solution to promote sparsity.
 """
-function IRWLS(A::Matrix{Float64},
-               b::Vector{Float64};
-               maxiter=100,
-               epsilon=0.01)
-    # get the second column dim of A
-    local p, x, xhat, w
+function IRWLS(A::AbstractMatrix{T},
+               b::AbstractVector{T};
+               maxiter::Int=100,
+               epsilon::Real=0.01) where {T<:Real}
     _, p = size(A)
-    w = ones(p)
-    w_old = w
-    o = ones(p)
-    x = zeros(p)
 
-    solver = () -> SCS.Optimizer(verbose=0)
+    # Initialize weights uniformly
+    w = ones(T, p)
+    w_old = copy(w)
+    xhat = zeros(T, p)
 
-    for i = 1:maxiter
-        # create a diagonal matrix from the vector w
-        W = diagm(w)
+    # Create solver factory (SCS 2.x API uses silent keyword in solve!)
+    solver = SCS.Optimizer
 
-        # solve the convex optimization task
-        xhat = Variable(p)
-        prob = minimize(norm(W*xhat, 1), A*xhat==b)
-        solve!(prob, solver)
-        xhat = evaluate(xha)
+    for _ in 1:maxiter
+        # Use Diagonal instead of diagm for efficiency (O(n) vs O(n²) storage)
+        W = Diagonal(w)
 
-        # check the stop condition then move on
-        w = 1.0./(epsilon*o + abs.(xhat))
+        # Solve the weighted L1 minimization problem
+        x_var = Variable(p)
+        prob = minimize(norm(W * x_var, 1), A * x_var == b)
+        solve!(prob, solver; silent=true)
+        xhat = evaluate(x_var)
+
+        # Update weights: smaller coefficients get larger weights
+        w = 1 ./ (epsilon .+ abs.(xhat))
+
+        # Check convergence
         if norm(w - w_old, 2) <= 1e-6
             break
         end
-        w = w_old
+        w_old = copy(w)
     end
-    x = xhat;
-    i = abs.(x) .< epsilon
-    x[i] = zeros(sum(i))
+
+    # Threshold small values to zero for clean sparse output
+    x = copy(xhat)
+    x[abs.(x) .< epsilon] .= zero(T)
+
     return x
+end
+
+# Convenience method for mixed numeric types
+function IRWLS(A::AbstractMatrix, b::AbstractVector; kwargs...)
+    T = promote_type(eltype(A), eltype(b))
+    return IRWLS(convert(Matrix{T}, A), convert(Vector{T}, b); kwargs...)
 end

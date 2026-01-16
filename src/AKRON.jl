@@ -18,38 +18,59 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-using LinearAlgebra, Convex, SCS;
+# Note: LinearAlgebra, Convex, SCS are imported by the parent module
+# TODO: This algorithm is work in progress and not yet exported
 
-function AKRON(A::Matrix{Float64}, b::Vector{Float64}, epsilon::Float64=1e-3)
+"""
+    AKRON(A, b; epsilon=1e-3)
 
-    # set the optimizer
-    solver = () -> SCS.Optimizer(verbose=0)
+Find the solution to Ax=b using the AKRON algorithm.
 
-    # find the null space and the size
-    X = nullspace(A);
-    s = size(X, 2);
-    n = size(A, 2);
+# Arguments
+- `A::AbstractMatrix`: Sensing matrix in Ax=b
+- `b::AbstractVector`: Measurement vector in Ax=b
+- `epsilon::Real`: Tolerance parameter (default: 1e-3)
 
-    # adjust the value of epsilon
-    epsilon2 = epsilon/2;
+# Returns
+- `Vector`: Sparse solution x to Ax=b
 
-    # get the intiial solution
-    xhat = Variable(n);
-    prob = minimize(norm(xhat, 1), norm(A*xhat-b, 2) <= epsilon2)
-    solve!(prob, solver)
-    xhat = evaluate(xhat);
+# Status
+⚠️ This function is currently under development and not yet exported.
+"""
+function AKRON(A::AbstractMatrix{T},
+               b::AbstractVector{T};
+               epsilon::Real=1e-3) where {T<:Real}
 
-    x_tmp = xhat;
-    x_l1 = xhat;
-    sgn = sign(xhat);
+    # Create solver factory (SCS 2.x API)
+    solver = SCS.Optimizer
 
-    i = permsort(abs.(xhat));
-    smallest = i[1:s];
-    largest = setdiff(1:n, smallest);
-    x_tmp = x_tmp[largest];
-    lgst_smallest = max(abs.(x[smallest]));
-    sgn_largest = sign.(x_tmp);
+    # Find the null space and dimensions
+    X = nullspace(A)
+    s = size(X, 2)
+    n = size(A, 2)
 
+    # Adjust epsilon
+    epsilon2 = epsilon / 2
 
+    # Get initial L1 minimization solution
+    xhat_var = Variable(n)
+    prob = minimize(norm(xhat_var, 1), norm(A * xhat_var - b, 2) <= epsilon2)
+    solve!(prob, solver; silent=true)
+    xhat = evaluate(xhat_var)
 
+    # Compute signs and sort by magnitude
+    x_tmp = copy(xhat)
+    sgn = sign.(xhat)
+
+    sorted_idx = sortperm(abs.(xhat))
+    smallest = sorted_idx[1:s]
+    largest = setdiff(1:n, smallest)
+
+    x_tmp = x_tmp[largest]
+    lgst_smallest = maximum(abs.(xhat[smallest]))
+    sgn_largest = sign.(x_tmp)
+
+    # TODO: Complete the AKRON algorithm implementation
+
+    return xhat
 end

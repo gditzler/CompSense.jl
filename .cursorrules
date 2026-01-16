@@ -1,0 +1,21 @@
+# CompSense.jl Cursor Rules
+
+## Code Formatting
+
+When editing files in this project:
+
+1. **Delete trailing whitespace**: Remove all trailing whitespace from the ends of lines
+2. **Delete extra blank lines**: Collapse multiple consecutive blank lines into a single blank line
+3. **No trailing newlines**: Files should end with exactly one newline character
+4. **Consistent indentation**: Use 4 spaces for indentation in Julia files (no tabs)
+
+## Julia Style Guidelines
+
+- Use `snake_case` for function and variable names
+- Use `PascalCase` for type names and module names
+- Prefer `AbstractMatrix` and `AbstractVector` over concrete types in function signatures
+- Use parametric types `where {T<:Real}` for numeric generics
+- Avoid `local` declarations (variables are local by default in functions)
+- Use `\` operator instead of `inv()` for solving linear systems
+- Prefer in-place operations (`mul!`, `.=`, `@.`) to reduce allocations
+- Use `Diagonal(v)` instead of `diagm(v)` for diagonal matrices

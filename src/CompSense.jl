@@ -25,10 +25,7 @@ using Convex
 using SCS
 using Random
 
-export IRWLS
-export L0EM
-export SL0
-export cs_model
+export IRWLS, L0EM, SL0, cs_model
 
 include("IRWLS.jl")
 include("L0EM.jl")
