@@ -3,7 +3,7 @@
         Random.seed!(1111)
         # Use smaller problem size since IRWLS uses convex optimization
         n, p, k = 20, 50, 3
-        A, x_true, b = cs_model(n, p, k)
+        A, x_true, b = gaussian_sensing(n, p, k)
 
         x_recovered = IRWLS(A, b; maxiter=5, epsilon=0.01)
 
@@ -18,7 +18,7 @@
     @testset "Output properties" begin
         Random.seed!(2222)
         n, p, k = 15, 40, 3
-        A, x_true, b = cs_model(n, p, k)
+        A, x_true, b = gaussian_sensing(n, p, k)
 
         x_recovered = IRWLS(A, b; maxiter=3)
 
@@ -33,19 +33,19 @@
     @testset "Sparsity promotion" begin
         Random.seed!(3333)
         n, p, k = 15, 40, 3
-        A, x_true, b = cs_model(n, p, k)
+        A, x_true, b = gaussian_sensing(n, p, k)
 
         x_recovered = IRWLS(A, b; maxiter=5, epsilon=0.05)
 
         # Solution should be sparse (many near-zero entries)
         num_small = count(xi -> abs(xi) < 0.1, x_recovered)
-        @test num_small >= p - 2 * k  # Most entries should be near zero
+        @test num_small >= p - 2 * k
     end
 
     @testset "Epsilon thresholding" begin
         Random.seed!(4444)
         n, p, k = 15, 40, 3
-        A, x_true, b = cs_model(n, p, k)
+        A, x_true, b = gaussian_sensing(n, p, k)
 
         epsilon = 0.1
         x_recovered = IRWLS(A, b; maxiter=3, epsilon=epsilon)
@@ -55,12 +55,12 @@
         @test all(small_entries .== 0.0)
     end
 
-    @testset "Type flexibility" begin
+    @testset "Different sensing matrices" begin
         Random.seed!(5555)
-        A = randn(10, 30)
-        b = randn(10)
 
-        x = IRWLS(A, b; maxiter=2)
-        @test length(x) == 30
+        # Test with Bernoulli sensing
+        A, x_true, b = bernoulli_sensing(15, 40, 3)
+        x_recovered = IRWLS(A, b; maxiter=3)
+        @test length(x_recovered) == 40
     end
 end

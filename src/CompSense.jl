@@ -25,11 +25,32 @@ using Convex
 using SCS
 using Random
 
-export IRWLS, L0EM, SL0, cs_model
+# Sparse recovery algorithms
+export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP
+
+# Sensing matrix generators
+export gaussian_sensing,
+       bernoulli_sensing,
+       fourier_sensing,
+       dct_sensing,
+       hadamard_sensing,
+       sparse_sensing,
+       uniform_sensing,
+       toeplitz_sensing
+
+# Utilities
+export generate_sparse_signal
+
+# Deprecated (kept for backward compatibility)
+export cs_model
 
 include("IRWLS.jl")
 include("L0EM.jl")
 include("SL0.jl")
+include("OMP.jl")
+include("FISTA.jl")
+include("IHT.jl")
+include("CoSaMP.jl")
 include("utils.jl")
 
 end

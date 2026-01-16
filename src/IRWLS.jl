@@ -62,8 +62,11 @@ function IRWLS(A::AbstractMatrix{T},
     w_old = copy(w)
     xhat = zeros(T, p)
 
-    # Create solver factory (SCS 2.x API uses silent keyword in solve!)
-    solver = SCS.Optimizer
+    # Create silent solver using Convex's re-exported MOI (Convex.jl 0.16+ API)
+    silent_solver = Convex.MOI.OptimizerWithAttributes(
+        SCS.Optimizer,
+        Convex.MOI.Silent() => true
+    )
 
     for _ in 1:maxiter
         # Use Diagonal instead of diagm for efficiency (O(n) vs O(n²) storage)
@@ -72,7 +75,7 @@ function IRWLS(A::AbstractMatrix{T},
         # Solve the weighted L1 minimization problem
         x_var = Variable(p)
         prob = minimize(norm(W * x_var, 1), A * x_var == b)
-        solve!(prob, solver; silent=true)
+        solve!(prob, silent_solver)
         xhat = evaluate(x_var)
 
         # Update weights: smaller coefficients get larger weights

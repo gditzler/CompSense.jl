@@ -41,8 +41,11 @@ function AKRON(A::AbstractMatrix{T},
                b::AbstractVector{T};
                epsilon::Real=1e-3) where {T<:Real}
 
-    # Create solver factory (SCS 2.x API)
-    solver = SCS.Optimizer
+    # Create silent solver using Convex's re-exported MOI (Convex.jl 0.16+ API)
+    silent_solver = Convex.MOI.OptimizerWithAttributes(
+        SCS.Optimizer,
+        Convex.MOI.Silent() => true
+    )
 
     # Find the null space and dimensions
     X = nullspace(A)
@@ -55,7 +58,7 @@ function AKRON(A::AbstractMatrix{T},
     # Get initial L1 minimization solution
     xhat_var = Variable(n)
     prob = minimize(norm(xhat_var, 1), norm(A * xhat_var - b, 2) <= epsilon2)
-    solve!(prob, solver; silent=true)
+    solve!(prob, silent_solver)
     xhat = evaluate(xhat_var)
 
     # Compute signs and sort by magnitude
