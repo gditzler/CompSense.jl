@@ -52,6 +52,11 @@ git-tree-sha1 = "962834c22b66e32aa10f7611c08c8ca4e20749a9"
 uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
 version = "0.7.8"
 
+[[Combinatorics]]
+git-tree-sha1 = "c761b00e7755700f9cdf5b02039939d1359330e1"
+uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+version = "1.1.0"
+
 [[CommonSubexpressions]]
 deps = ["MacroTools"]
 git-tree-sha1 = "cda2cfaebb4be89c9084adaca7dd7333369715c5"
@@ -59,7 +64,7 @@ uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
 version = "0.3.1"
 
 [[CompSense]]
-deps = ["Convex", "LinearAlgebra", "Random", "SCS"]
+deps = ["Combinatorics", "Convex", "LinearAlgebra", "Pluto", "Random", "SCS"]
 path = "."
 uuid = "fc9ab54f-05c8-490d-b2ab-7595dd5cd9b2"
 version = "0.1.0"

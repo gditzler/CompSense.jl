@@ -93,6 +93,16 @@ println("\nL0EM (L0 Expectation-Maximization):")
 println("  Relative error: $(round(error_l0em * 100, digits=2))%")
 println("  Non-zeros recovered: $(count(xi -> abs(xi) > 0.001, x_l0em))")
 
+# Method 7: AKRON (Approximate Kernel Reconstruction)
+# AKRON uses L1 minimization + combinatorial kernel refinement, so we use a
+# smaller problem to keep runtime reasonable.
+A_small, x_true_small, b_small = gaussian_sensing(20, 50, 3)
+x_akron = AKRON(A, b; shift=3)
+error_akron = norm(x_akron - x_true_small) / norm(x_true_small)
+println("\nAKRON (Approximate Kernel Reconstruction) [20×50, k=3]:")
+println("  Relative error: $(round(error_akron * 100, digits=2))%")
+println("  Non-zeros recovered: $(count(xi -> abs(xi) > 0.01, x_akron))")
+
 # ============================================================================
 # Summary
 # ============================================================================
@@ -107,5 +117,6 @@ println("IHT                |   $(lpad(round(error_iht * 100, digits=2), 6))%  |
 println("CoSaMP             |   $(lpad(round(error_cosamp * 100, digits=2), 6))%  |  $(count(!iszero, x_cosamp))")
 println("FISTA              |   $(lpad(round(error_fista * 100, digits=2), 6))%  |  $(count(xi -> abs(xi) > 0.01, x_fista))")
 println("L0EM               |   $(lpad(round(error_l0em * 100, digits=2), 6))%  |  $(count(xi -> abs(xi) > 0.001, x_l0em))")
+println("AKRON (20×50, k=3) |   $(lpad(round(error_akron * 100, digits=2), 6))%  |  $(count(xi -> abs(xi) > 0.01, x_akron))")
 
 println("\n✓ All algorithms successfully recovered the sparse signal!")

@@ -24,9 +24,10 @@ using LinearAlgebra
 using Convex
 using SCS
 using Random
+using Combinatorics
 
 # Sparse recovery algorithms
-export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP
+export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP, AKRON, KRON
 
 # Sensing matrix generators
 export gaussian_sensing,
@@ -51,6 +52,8 @@ include("OMP.jl")
 include("FISTA.jl")
 include("IHT.jl")
 include("CoSaMP.jl")
+include("AKRON.jl")
+include("KRON.jl")
 include("utils.jl")
 
 end
