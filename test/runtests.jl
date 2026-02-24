@@ -17,4 +17,5 @@ Random.seed!(42)
     include("test_cosamp.jl")
     include("test_akron.jl")
     include("test_kron.jl")
+    include("test_reweightedl1.jl")
 end

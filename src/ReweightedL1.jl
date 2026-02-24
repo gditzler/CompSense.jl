@@ -21,9 +21,9 @@
 # Note: LinearAlgebra, Convex, SCS are imported by the parent module
 
 """
-    IRWLS(A, b; maxiter=100, epsilon=0.01)
+    ReweightedL1(A, b; maxiter=100, epsilon=0.01)
 
-Find the solution to Ax=b using Iteratively Reweighted Least Squares (IRWLS).
+Find the solution to Ax=b using Reweighted L1 Minimization.
 
 # Arguments
 - `A::AbstractMatrix`: Sensing matrix in Ax=b
@@ -38,23 +38,24 @@ Find the solution to Ax=b using Iteratively Reweighted Least Squares (IRWLS).
 ```julia
 A = randn(10, 100)
 b = randn(10)
-x = IRWLS(A, b; maxiter=5, epsilon=0.01)
+x = ReweightedL1(A, b; maxiter=5, epsilon=0.01)
 ```
 
 # Algorithm
-Implements the reweighted L1 minimization algorithm from:
+Implements the reweighted L1 minimization algorithm. At each iteration,
+a weighted L1 minimization problem is solved, and the weights are updated
+as `w = 1 / (ε + |x|)` to promote sparsity. The algorithm converges when
+the change in weights falls below a tolerance.
 
+# Reference
 > Emmanuel J. Candès, Michael B. Wakin, and Stephen P. Boyd, "Enhancing
 > Sparsity by Reweighted L1 Minimization," J Fourier Anal Appl (2008)
 > 14: 877–905.
-
-The algorithm iteratively solves weighted L1 minimization problems,
-updating weights based on the current solution to promote sparsity.
 """
-function IRWLS(A::AbstractMatrix{T},
-               b::AbstractVector{T};
-               maxiter::Int=100,
-               epsilon::Real=0.01) where {T<:Real}
+function ReweightedL1(A::AbstractMatrix{T},
+                      b::AbstractVector{T};
+                      maxiter::Int=100,
+                      epsilon::Real=0.01) where {T<:Real}
     _, p = size(A)
     eps_T = convert(T, epsilon)
 
@@ -103,7 +104,7 @@ function IRWLS(A::AbstractMatrix{T},
 end
 
 # Convenience method for mixed numeric types
-function IRWLS(A::AbstractMatrix, b::AbstractVector; kwargs...)
+function ReweightedL1(A::AbstractMatrix, b::AbstractVector; kwargs...)
     T = promote_type(eltype(A), eltype(b))
-    return IRWLS(convert(Matrix{T}, A), convert(Vector{T}, b); kwargs...)
+    return ReweightedL1(convert(Matrix{T}, A), convert(Vector{T}, b); kwargs...)
 end

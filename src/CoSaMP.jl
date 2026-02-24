@@ -74,12 +74,18 @@ function CoSaMP(A::AbstractMatrix{T},
     x = zeros(T, n)
     residual = copy(b)
 
+    # Pre-allocate working arrays
+    proxy = zeros(T, n)
+    x_full = zeros(T, n)
+    abs_buf = zeros(T, n)
+
     for _ in 1:maxiter
-        # Form signal proxy: correlation with residual
-        proxy = A' * residual
+        # Form signal proxy: correlation with residual (in-place)
+        mul!(proxy, A', residual)
 
         # Identify 2k largest components
-        perm = sortperm(abs.(proxy), rev=true)
+        @. abs_buf = abs(proxy)
+        perm = sortperm(abs_buf, rev=true)
         omega = perm[1:min(2k, n)]
 
         # Merge with current support
@@ -95,13 +101,14 @@ function CoSaMP(A::AbstractMatrix{T},
         x_merged = A_merged \ b
 
         # Create full vector from merged solution
-        x_full = zeros(T, n)
+        fill!(x_full, zero(T))
         @inbounds for (i, j) in enumerate(merged_support)
             x_full[j] = x_merged[i]
         end
 
         # Prune to k largest entries
-        perm_full = sortperm(abs.(x_full), rev=true)
+        @. abs_buf = abs(x_full)
+        perm_full = sortperm(abs_buf, rev=true)
         final_support = perm_full[1:k]
 
         # Update x: keep only k largest
@@ -110,8 +117,9 @@ function CoSaMP(A::AbstractMatrix{T},
             x[j] = x_full[j]
         end
 
-        # Update residual
-        residual = b - A * x
+        # Update residual in-place
+        mul!(residual, A, x)
+        @. residual = b - residual
 
         # Check convergence
         if norm(residual) < tol

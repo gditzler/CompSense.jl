@@ -56,6 +56,8 @@ function L0EM(A::AbstractMatrix{T},
               epsilon::Real=0.001,
               maxiter::Int=50) where {T<:Real}
     n, p = size(A)
+    eps_T = convert(T, epsilon)
+    lambda_T = convert(T, lambda)
 
     # Precompute A'*A and A'*b for efficiency
     AtA = A' * A
@@ -63,7 +65,7 @@ function L0EM(A::AbstractMatrix{T},
 
     # Get initial solution using regularized least squares
     # Use \ operator instead of inv() for numerical stability and performance
-    theta = (AtA + lambda * I) \ Atb
+    theta = (AtA + lambda_T * I) \ Atb
 
     # Pre-allocate working arrays
     eta = similar(theta)
@@ -84,7 +86,7 @@ function L0EM(A::AbstractMatrix{T},
 
         # Update theta using backslash (numerically stable)
         # Solves: (A_weighted' * A + λI) * theta = A_weighted' * b
-        theta = (A_weighted' * A + lambda * I) \ (A_weighted' * b)
+        theta = (A_weighted' * A + lambda_T * I) \ (A_weighted' * b)
 
         # Check convergence
         if norm(theta - eta, 2) <= epsilon
@@ -94,7 +96,11 @@ function L0EM(A::AbstractMatrix{T},
 
     # Threshold small values to zero
     x = copy(theta)
-    x[abs.(x) .< epsilon] .= zero(T)
+    @inbounds for i in eachindex(x)
+        if abs(x[i]) < eps_T
+            x[i] = zero(T)
+        end
+    end
 
     return x
 end

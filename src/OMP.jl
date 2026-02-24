@@ -74,12 +74,15 @@ function OMP(A::AbstractMatrix{T},
     residual = copy(b)
     support = Int[]
 
-    # Precompute column norms for correlation normalization
-    col_norms = [norm(A[:, j]) for j in 1:n]
+    # Pre-allocate correlation buffer
+    correlations = zeros(T, n)
+
+    # Precompute column norms for correlation normalization (views avoid column copies)
+    col_norms = [norm(@view A[:, j]) for j in 1:n]
 
     for _ in 1:max_iters
         # Find column most correlated with residual
-        correlations = A' * residual
+        mul!(correlations, A', residual)
 
         # Normalize by column norms to get proper correlation
         @inbounds for j in 1:n
@@ -93,8 +96,16 @@ function OMP(A::AbstractMatrix{T},
             correlations[j] = zero(T)
         end
 
-        # Select index with maximum absolute correlation
-        _, idx = findmax(abs.(correlations))
+        # Select index with maximum absolute correlation (avoids allocating abs array)
+        best_val = zero(T)
+        idx = 1
+        @inbounds for j in 1:n
+            av = abs(correlations[j])
+            if av > best_val
+                best_val = av
+                idx = j
+            end
+        end
         push!(support, idx)
 
         # Solve least squares on current support
@@ -107,8 +118,9 @@ function OMP(A::AbstractMatrix{T},
             x[j] = x_support[i]
         end
 
-        # Update residual
-        residual = b - A * x
+        # Update residual in-place
+        mul!(residual, A, x)
+        @. residual = b - residual
 
         # Check convergence
         if norm(residual) < tol

@@ -58,6 +58,7 @@ function SL0(A::AbstractMatrix{T},
     # Algorithm constants
     mu_0 = T(2)  # Scales the gradient step in steepest ascent
     L = 3        # Number of internal steepest ascent iterations
+    eps_T = convert(T, epsilon)
 
     # Compute pseudo-inverse once (expensive but needed for projection)
     A_pinv = pinv(A)
@@ -94,7 +95,11 @@ function SL0(A::AbstractMatrix{T},
 
     # Threshold small values to zero
     x = copy(s)
-    x[abs.(x) .< epsilon] .= zero(T)
+    @inbounds for i in eachindex(x)
+        if abs(x[i]) < eps_T
+            x[i] = zero(T)
+        end
+    end
 
     return x
 end

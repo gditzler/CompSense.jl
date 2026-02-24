@@ -97,7 +97,7 @@ println("  Non-zeros recovered: $(count(xi -> abs(xi) > 0.001, x_l0em))")
 # AKRON uses L1 minimization + combinatorial kernel refinement, so we use a
 # smaller problem to keep runtime reasonable.
 A_small, x_true_small, b_small = gaussian_sensing(20, 50, 3)
-x_akron = AKRON(A, b; shift=3)
+x_akron = AKRON(A_small, b_small; shift=3)
 error_akron = norm(x_akron - x_true_small) / norm(x_true_small)
 println("\nAKRON (Approximate Kernel Reconstruction) [20×50, k=3]:")
 println("  Relative error: $(round(error_akron * 100, digits=2))%")

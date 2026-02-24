@@ -27,7 +27,7 @@ using Random
 using Combinatorics
 
 # Sparse recovery algorithms
-export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP, AKRON, KRON
+export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP, AKRON, KRON, ReweightedL1
 
 # Sensing matrix generators
 export gaussian_sensing,
@@ -54,6 +54,7 @@ include("IHT.jl")
 include("CoSaMP.jl")
 include("AKRON.jl")
 include("KRON.jl")
+include("ReweightedL1.jl")
 include("utils.jl")
 
 end

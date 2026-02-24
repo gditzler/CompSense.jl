@@ -21,14 +21,19 @@
 # Note: LinearAlgebra is imported by the parent module
 
 """
-    soft_threshold(z, threshold)
+    soft_threshold!(out, z, threshold)
 
-Apply soft thresholding (proximal operator for L1 norm) element-wise.
+In-place soft thresholding (proximal operator for L1 norm) element-wise.
 
-Computes: sign(z) * max(|z| - threshold, 0)
+Computes: out[i] = sign(z[i]) * max(|z[i]| - threshold, 0)
 """
-function soft_threshold(z::AbstractVector{T}, threshold::Real) where {T<:Real}
-    return sign.(z) .* max.(abs.(z) .- threshold, zero(T))
+function soft_threshold!(out::AbstractVector{T}, z::AbstractVector{T}, threshold::Real) where {T<:Real}
+    @inbounds for i in eachindex(out, z)
+        zi = z[i]
+        azi = abs(zi)
+        out[i] = azi > threshold ? sign(zi) * (azi - threshold) : zero(T)
+    end
+    return out
 end
 
 """
@@ -89,6 +94,8 @@ function FISTA(A::AbstractMatrix{T},
     AtA = A' * A
     Atb = A' * b
 
+    lambda_T = convert(T, lambda)
+
     # Initialize
     x = zeros(T, n)
     x_old = zeros(T, n)
@@ -98,20 +105,21 @@ function FISTA(A::AbstractMatrix{T},
     # Step size
     step = one(T) / L_const
 
-    # Pre-allocate gradient
+    # Pre-allocate working arrays
     grad = similar(x)
+    z = similar(x)
 
     for iter in 1:maxiter
         # Compute gradient: ∇f(y) = A'(Ay - b) = A'Ay - A'b
         mul!(grad, AtA, y)
         grad .-= Atb
 
-        # Gradient step
-        z = y .- step .* grad
+        # Gradient step (fused broadcast, no allocation)
+        @. z = y - step * grad
 
-        # Proximal step (soft thresholding)
+        # Proximal step (in-place soft thresholding)
         copyto!(x_old, x)
-        x .= soft_threshold(z, lambda * step)
+        soft_threshold!(x, z, lambda_T * step)
 
         # Nesterov momentum update
         t_old = t
