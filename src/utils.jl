@@ -60,6 +60,55 @@ function ensure_full_row_rank(A::AbstractMatrix, n::Integer, generator::Function
 end
 
 #==============================================================================#
+# Noise Utilities
+#==============================================================================#
+
+"""
+    add_noise(b; snr=nothing, sigma=nothing)
+
+Add Gaussian noise to a measurement vector.
+
+Exactly one of `snr` or `sigma` must be specified.
+
+# Arguments
+- `b::AbstractVector`: Clean measurement vector
+- `snr::Union{Real,Nothing}`: Desired signal-to-noise ratio in dB (default: nothing)
+- `sigma::Union{Real,Nothing}`: Noise standard deviation (default: nothing)
+
+# Returns
+- `Vector{Float64}`: Noisy measurement vector `b + e`
+
+# Example
+```julia
+b = randn(50)
+b_noisy = add_noise(b; snr=20.0)    # 20 dB SNR
+b_noisy = add_noise(b; sigma=0.1)   # σ = 0.1 noise
+```
+"""
+function add_noise(b::AbstractVector; snr::Union{Real,Nothing}=nothing,
+                   sigma::Union{Real,Nothing}=nothing)
+    if isnothing(snr) && isnothing(sigma)
+        throw(ArgumentError("Must specify either snr or sigma"))
+    end
+    if !isnothing(snr) && !isnothing(sigma)
+        throw(ArgumentError("Specify only one of snr or sigma, not both"))
+    end
+
+    if !isnothing(snr)
+        # SNR = 10 * log10(‖b‖² / ‖e‖²)
+        # => ‖e‖² = ‖b‖² / 10^(snr/10)
+        # => σ = ‖b‖ / (√m * 10^(snr/20))
+        signal_power = norm(b)^2
+        noise_power = signal_power / 10^(snr / 10)
+        sigma_val = sqrt(noise_power / length(b))
+    else
+        sigma_val = Float64(sigma)
+    end
+
+    return b + sigma_val * randn(length(b))
+end
+
+#==============================================================================#
 # Sensing Matrix Generators
 #==============================================================================#
 
@@ -92,7 +141,9 @@ x_recovered = SL0(A, b)
 # References
 - Candès & Tao (2005), "Decoding by Linear Programming"
 """
-function gaussian_sensing(n::Integer, p::Integer, k::Integer; normalize::Bool=false)
+function gaussian_sensing(n::Integer, p::Integer, k::Integer;
+                          normalize::Bool=false,
+                          snr::Union{Real,Nothing}=nothing)
     # Generate Gaussian matrix with full row rank
     A = randn(n, p)
     A = ensure_full_row_rank(A, n, () -> randn(n, p))
@@ -106,6 +157,10 @@ function gaussian_sensing(n::Integer, p::Integer, k::Integer; normalize::Bool=fa
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end
@@ -139,7 +194,9 @@ x_recovered = L0EM(A, b)
 # References
 - Achlioptas (2003), "Database-friendly random projections"
 """
-function bernoulli_sensing(n::Integer, p::Integer, k::Integer; scaled::Bool=true)
+function bernoulli_sensing(n::Integer, p::Integer, k::Integer;
+                           scaled::Bool=true,
+                           snr::Union{Real,Nothing}=nothing)
     # Generate ±1 entries with equal probability
     A = Float64.(2 .* (rand(n, p) .> 0.5) .- 1)
     A = ensure_full_row_rank(A, n, () -> Float64.(2 .* (rand(n, p) .> 0.5) .- 1))
@@ -150,6 +207,10 @@ function bernoulli_sensing(n::Integer, p::Integer, k::Integer; scaled::Bool=true
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end
@@ -187,7 +248,9 @@ x_recovered = SL0(A, b)
 # References
 - Candès, Romberg & Tao (2006), "Robust uncertainty principles"
 """
-function fourier_sensing(n::Integer, p::Integer, k::Integer; real_valued::Bool=true)
+function fourier_sensing(n::Integer, p::Integer, k::Integer;
+                         real_valued::Bool=true,
+                         snr::Union{Real,Nothing}=nothing)
     # Construct full DFT matrix (normalized)
     # F[j,k] = exp(-2πi(j-1)(k-1)/p) / √p
     F = zeros(ComplexF64, p, p)
@@ -229,6 +292,10 @@ function fourier_sensing(n::Integer, p::Integer, k::Integer; real_valued::Bool=t
     x = generate_sparse_signal(p, k)
     b = A * x
 
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
+
     return A, x, b
 end
 
@@ -265,7 +332,8 @@ x_recovered = IRWLS(A, b)
 # References
 - Candès & Romberg (2007), "Sparsity and incoherence in compressive sampling"
 """
-function dct_sensing(n::Integer, p::Integer, k::Integer)
+function dct_sensing(n::Integer, p::Integer, k::Integer;
+                     snr::Union{Real,Nothing}=nothing)
     # Construct DCT-II matrix (orthonormal)
     # D[j,k] = √(2/p) * cos(π(j-1)(2k-1)/(2p)) for j>1
     # D[1,k] = √(1/p)
@@ -293,6 +361,10 @@ function dct_sensing(n::Integer, p::Integer, k::Integer)
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end
@@ -327,7 +399,9 @@ x_recovered = SL0(A, b)
 - Throws error if p is not a power of 2
 - Very fast matrix-vector products via Walsh-Hadamard transform
 """
-function hadamard_sensing(n::Integer, p::Integer, k::Integer; normalized::Bool=true)
+function hadamard_sensing(n::Integer, p::Integer, k::Integer;
+                          normalized::Bool=true,
+                          snr::Union{Real,Nothing}=nothing)
     # Check that p is a power of 2
     if !ispow2(p)
         throw(ArgumentError("p must be a power of 2 for Hadamard matrix, got p=$p"))
@@ -346,6 +420,10 @@ function hadamard_sensing(n::Integer, p::Integer, k::Integer; normalized::Bool=t
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end
@@ -400,7 +478,8 @@ x_recovered = L0EM(A, b)
 """
 function sparse_sensing(n::Integer, p::Integer, k::Integer;
                         density::Real=0.1,
-                        normalize_cols::Bool=true)
+                        normalize_cols::Bool=true,
+                        snr::Union{Real,Nothing}=nothing)
     if density <= 0 || density > 1
         throw(ArgumentError("density must be in (0, 1], got $density"))
     end
@@ -426,6 +505,10 @@ function sparse_sensing(n::Integer, p::Integer, k::Integer;
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end
@@ -457,13 +540,18 @@ x_recovered = SL0(A, b)
 """
 function uniform_sensing(n::Integer, p::Integer, k::Integer;
                          low::Real=-1.0,
-                         high::Real=1.0)
+                         high::Real=1.0,
+                         snr::Union{Real,Nothing}=nothing)
     range = high - low
     A = low .+ range .* rand(n, p)
     A = ensure_full_row_rank(A, n, () -> low .+ range .* rand(n, p))
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end
@@ -502,7 +590,9 @@ x_recovered = SL0(A, b)
 # References
 - Haupt et al. (2010), "Toeplitz Compressed Sensing Matrices"
 """
-function toeplitz_sensing(n::Integer, p::Integer, k::Integer; normalize::Bool=true)
+function toeplitz_sensing(n::Integer, p::Integer, k::Integer;
+                          normalize::Bool=true,
+                          snr::Union{Real,Nothing}=nothing)
     # Generate the first column and first row values
     # For an n×p Toeplitz matrix, we need n + p - 1 values
     values = randn(n + p - 1)
@@ -533,6 +623,10 @@ function toeplitz_sensing(n::Integer, p::Integer, k::Integer; normalize::Bool=tr
 
     x = generate_sparse_signal(p, k)
     b = A * x
+
+    if !isnothing(snr)
+        b = add_noise(b; snr=snr)
+    end
 
     return A, x, b
 end

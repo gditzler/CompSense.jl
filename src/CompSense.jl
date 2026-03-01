@@ -27,7 +27,8 @@ using Random
 using Combinatorics
 
 # Sparse recovery algorithms
-export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP, AKRON, KRON, ReweightedL1
+export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP, AKRON, KRON, ReweightedL1,
+       BasisPursuit, BPDN, LASSO, SP, NIHT, ADMM, AMP
 
 # Sensing matrix generators
 export gaussian_sensing,
@@ -40,7 +41,13 @@ export gaussian_sensing,
        toeplitz_sensing
 
 # Utilities
-export generate_sparse_signal
+export generate_sparse_signal, add_noise
+
+# Metrics
+export recovery_error, support_recovery, snr, nmse, phase_transition
+
+# Sensing matrix analysis
+export mutual_coherence, babel_function, spark, column_coherence_matrix
 
 # Deprecated (kept for backward compatibility)
 export cs_model
@@ -55,6 +62,15 @@ include("CoSaMP.jl")
 include("AKRON.jl")
 include("KRON.jl")
 include("ReweightedL1.jl")
+include("BasisPursuit.jl")
+include("BPDN.jl")
+include("LASSO.jl")
+include("SP.jl")
+include("NIHT.jl")
+include("ADMM.jl")
+include("AMP.jl")
 include("utils.jl")
+include("metrics.jl")
+include("analysis.jl")
 
 end
