@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+CompSense = "fc9ab54f-05c8-490d-b2ab-7595dd5cd9b2"
+
+[compat]
+Documenter = "1"
