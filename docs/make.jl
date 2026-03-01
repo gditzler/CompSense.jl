@@ -21,8 +21,7 @@ makedocs(
     ],
 )
 
-# Uncomment when CI is configured:
-# deploydocs(
-#     repo = "github.com/gditzler/CompSense.jl.git",
-#     devbranch = "main",
-# )
+deploydocs(
+    repo = "github.com/gditzler/CompSense.jl.git",
+    devbranch = "main",
+)
