@@ -320,7 +320,7 @@ Exact combinatorial recovery via kernel enumeration.
 x = KRON(A, b; epsilon=1e-6)
 ```
 
-**Reference:** Ditzler & Assaleh, "KRON: An Approach for the Integration of the Kernel Trick within the KRON Compressed Sensing Framework."
+**Reference:** Bayar, Bouaynaya & Shterenberg, ["Kernel Reconstruction: An Exact Greedy Algorithm for Compressive Sensing"](https://ieeexplore.ieee.org/abstract/document/7032355/), IEEE GlobalSIP, 2014.
 
 ---
 

@@ -59,8 +59,9 @@ Note: The combinatorial enumeration has complexity O(n choose s), which grows
 rapidly. This algorithm is best suited for small problem sizes.
 
 Reference:
-> Ditzler, G. and Assaleh, K., "KRON: An Approach for the Integration of
-> the Kernel Trick within the KRON Compressed Sensing Framework."
+> Bayar, B., Bouaynaya, N., and Shterenberg, R., "Kernel Reconstruction:
+> An Exact Greedy Algorithm for Compressive Sensing," IEEE Global Conference
+> on Signal and Information Processing (GlobalSIP), 2014.
 """
 function KRON(A::AbstractMatrix{T},
               b::AbstractVector{T};
