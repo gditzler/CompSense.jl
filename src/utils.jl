@@ -632,6 +632,151 @@ function toeplitz_sensing(n::Integer, p::Integer, k::Integer;
 end
 
 #==============================================================================#
+# 1-Bit Compressed Sensing
+#==============================================================================#
+
+"""
+    onebit_sensing(n, p, k)
+
+Generate a 1-bit compressed sensing problem.
+
+Generates a Gaussian sensing matrix A, a unit-norm k-sparse signal x, and
+binary measurements y = sign(Ax).
+
+# Arguments
+- `n::Integer`: Number of measurements (rows)
+- `p::Integer`: Signal dimension (columns)
+- `k::Integer`: Sparsity level
+
+# Returns
+- `A::Matrix{Float64}`: n x p Gaussian sensing matrix
+- `x::Vector{Float64}`: Unit-norm k-sparse signal
+- `y::Vector{Float64}`: Binary measurements in {-1, +1}
+
+# Example
+```julia
+A, x, y = onebit_sensing(200, 100, 5)
+x_recovered = BIHT(A, y; sparsity=5)
+```
+"""
+function onebit_sensing(n::Integer, p::Integer, k::Integer)
+    A = randn(n, p)
+    x = generate_sparse_signal(p, k)
+    x ./= norm(x)  # Normalize to unit norm
+    y = sign.(A * x)
+    return A, x, y
+end
+
+#==============================================================================#
+# Multiple Measurement Vectors (MMV)
+#==============================================================================#
+
+"""
+    generate_mmv_problem(n, p, k, L; snr=nothing)
+
+Generate a Multiple Measurement Vector (MMV) compressed sensing problem.
+
+Creates a sensing matrix A, a jointly sparse matrix X (shared k-element support
+with different values per column), and measurements B = AX.
+
+# Arguments
+- `n::Integer`: Number of measurements (rows of A)
+- `p::Integer`: Signal dimension (columns of A / rows of X)
+- `k::Integer`: Row-sparsity level (number of non-zero rows in X)
+- `L::Integer`: Number of measurement vectors (columns of B and X)
+- `snr::Union{Real,Nothing}`: Optional SNR in dB for adding noise (default: nothing)
+
+# Returns
+- `A::Matrix{Float64}`: n x p Gaussian sensing matrix
+- `X::Matrix{Float64}`: p x L jointly sparse signal matrix
+- `B::Matrix{Float64}`: n x L measurement matrix B = AX
+
+# Example
+```julia
+A, X_true, B = generate_mmv_problem(50, 200, 5, 3)
+X_recovered = SOMP(A, B; sparsity=5)
+```
+"""
+function generate_mmv_problem(n::Integer, p::Integer, k::Integer, L::Integer;
+                              snr::Union{Real,Nothing}=nothing)
+    A = randn(n, p)
+    A = ensure_full_row_rank(A, n, () -> randn(n, p))
+
+    # Generate jointly sparse X with shared support
+    support = sort(randperm(p)[1:k])
+    X = zeros(p, L)
+    for l in 1:L
+        X[support, l] = sign.(randn(k)) .* (1.0 .+ abs.(randn(k)))
+    end
+
+    B = A * X
+
+    if !isnothing(snr)
+        for l in 1:L
+            B[:, l] = add_noise(B[:, l]; snr=snr)
+        end
+    end
+
+    return A, X, B
+end
+
+#==============================================================================#
+# Matrix Completion
+#==============================================================================#
+
+"""
+    generate_matrix_completion_problem(m, n, r, fraction_observed)
+
+Generate a matrix completion problem.
+
+Creates a rank-r matrix M = L*R', samples a fraction of observed entries,
+and returns the observed indices and values.
+
+# Arguments
+- `m::Integer`: Number of rows
+- `n::Integer`: Number of columns
+- `r::Integer`: Rank of the true matrix
+- `fraction_observed::Real`: Fraction of entries to observe (0, 1]
+
+# Returns
+- `Omega::Vector{Tuple{Int,Int}}`: Observed entry indices
+- `values::Vector{Float64}`: Observed entry values
+- `M_true::Matrix{Float64}`: True rank-r matrix
+
+# Example
+```julia
+Omega, values, M_true = generate_matrix_completion_problem(30, 30, 3, 0.5)
+M_recovered = SVT(Omega, values, 30, 30)
+```
+"""
+function generate_matrix_completion_problem(m::Integer, n::Integer, r::Integer,
+                                            fraction_observed::Real)
+    if fraction_observed <= 0 || fraction_observed > 1
+        throw(ArgumentError("fraction_observed must be in (0, 1], got $fraction_observed"))
+    end
+    if r > min(m, n)
+        throw(ArgumentError("rank r must be <= min(m, n), got r=$r, min(m,n)=$(min(m,n))"))
+    end
+
+    # Generate rank-r matrix
+    L = randn(m, r)
+    R = randn(n, r)
+    M_true = L * R'
+
+    # Sample observed entries
+    total_entries = m * n
+    num_observed = round(Int, fraction_observed * total_entries)
+
+    # Generate random unique indices
+    all_indices = [(i, j) for i in 1:m for j in 1:n]
+    perm = randperm(total_entries)
+    Omega = all_indices[perm[1:num_observed]]
+    values = [M_true[i, j] for (i, j) in Omega]
+
+    return Omega, values, M_true
+end
+
+#==============================================================================#
 # Deprecated: Original cs_model for backward compatibility
 #==============================================================================#
 

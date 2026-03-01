@@ -28,7 +28,11 @@ using Combinatorics
 
 # Sparse recovery algorithms
 export IRWLS, L0EM, SL0, OMP, FISTA, IHT, CoSaMP, AKRON, KRON, ReweightedL1,
-       BasisPursuit, BPDN, LASSO, SP, NIHT, ADMM, AMP
+       BasisPursuit, BPDN, LASSO, SP, NIHT, ADMM, AMP,
+       BIHT, SOMP, GroupLASSO, SVT
+
+# Sparsity basis / dictionary support
+export recover_in_basis, dct_matrix, identity_matrix
 
 # Sensing matrix generators
 export gaussian_sensing,
@@ -41,7 +45,8 @@ export gaussian_sensing,
        toeplitz_sensing
 
 # Utilities
-export generate_sparse_signal, add_noise
+export generate_sparse_signal, add_noise,
+       onebit_sensing, generate_mmv_problem, generate_matrix_completion_problem
 
 # Metrics
 export recovery_error, support_recovery, snr, nmse, phase_transition
@@ -69,7 +74,12 @@ include("SP.jl")
 include("NIHT.jl")
 include("ADMM.jl")
 include("AMP.jl")
+include("BIHT.jl")
+include("SOMP.jl")
+include("GroupLASSO.jl")
+include("SVT.jl")
 include("utils.jl")
+include("basis.jl")
 include("metrics.jl")
 include("analysis.jl")
 
