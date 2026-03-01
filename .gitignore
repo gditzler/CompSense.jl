@@ -1,6 +1,9 @@
-# files 
-*.pyc 
+# files
+*.pyc
 
 # folders
 *.ipynb_checkpoints/
 .DS_Store
+.vscode/
+.zed/
+
