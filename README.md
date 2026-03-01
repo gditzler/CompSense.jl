@@ -1,4 +1,6 @@
-# CompSense.jl
+<p align="center">
+  <img src="assets/compsense_wordmark.png" alt="CompSense.jl" width="600">
+</p>
 
 A Julia package for **compressed sensing** and **sparse signal recovery**. CompSense.jl provides efficient implementations of **21 algorithms** to solve the underdetermined system Ax = b, where x is known to be sparse — including support for 1-bit compressed sensing, multiple measurement vectors (MMV), matrix completion, and recovery in arbitrary bases/dictionaries.
 
