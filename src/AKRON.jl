@@ -54,8 +54,9 @@ x = AKRON(A, b; shift=3)
 5. Select the combination yielding the sparsest solution (ties broken by L1 norm)
 
 # References
-> Gregory Ditzler and Nidhal Bouaynaya, "Approximate Kernel Reconstruction
-> for Data-Driven Subspace Learning," 2019.
+> Ditzler, G., Bouaynaya, N.C., and Shterenberg, R., "AKRON: An Algorithm
+> for Approximating Sparse Kernel Reconstruction," Signal Processing,
+> vol. 144, pp. 265-270, 2018.
 """
 function AKRON(A::AbstractMatrix{T}, b::AbstractVector{T};
                shift::Int=3,

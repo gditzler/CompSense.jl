@@ -308,7 +308,7 @@ Data-driven combinatorial approach using kernel approximations.
 x = AKRON(A, b; shift=3, sparsity_threshold=1e-3)
 ```
 
-**Reference:** Ditzler & Bouaynaya, "Approximate Kernel Reconstruction for Data-Driven Subspace Learning," 2019.
+**Reference:** Ditzler, Bouaynaya & Shterenberg, ["AKRON: An Algorithm for Approximating Sparse Kernel Reconstruction"](https://www.sciencedirect.com/science/article/pii/S0165168417303791), Signal Processing, vol. 144, 2018.
 
 ---
 
