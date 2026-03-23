@@ -1,6 +1,6 @@
 name = "CompSense"
 uuid = "fc9ab54f-05c8-490d-b2ab-7595dd5cd9b2"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Gregory Ditzler <gregory.ditzler@gmail.com>"]
 
 [deps]
